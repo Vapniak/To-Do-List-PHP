@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - ${MYSQL_PORT}:3306
+    environment:
+      - MYSQL_DATABASE=database
+      - MYSQL_ROOT_PASSWORD=passwd
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=user_passwd
+    networks:
+      - backend
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+  api:
+    build: ./api
+    volumes:
+    - ./api:/var/www/html
+    environment:
+      - MYSQL_DATABASE=database
+      - MYSQL_USERNAME=user
+      - MYSQL_PASSWORD=user_passwd
+      - MYSQL_PORT=${MYSQL_PORT}
+    ports:
+      - ${API_PORT}:80
+    depends_on:
+      - db
+    networks:
+      - backend
+      - frontend
+  client:
+    build: ./client
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - frontend
+    depends_on:
+      - api
+    environment:
+      - PORT=3000
+      - API_URL=http://localhost:${API_PORT}
+    ports:
+      - ${CLIENT_PORT}:3000
+
+networks:
+  backend:
+  frontend:
